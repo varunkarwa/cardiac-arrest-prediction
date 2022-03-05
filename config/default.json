@@ -1,0 +1,4 @@
+{
+    "mongoURI" : "mongodb+srv://beproject:beproject@cluster0.zuqjg.mongodb.net/predictiondatabase?retryWrites=true&w=majority",
+    "jwtSecret" : "secret"
+}
