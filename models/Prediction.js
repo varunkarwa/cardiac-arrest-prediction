@@ -111,11 +111,7 @@ const PredictionSchema = mongoose.Schema({
         }
     },
     target:{
-        type     : Number,
-        validate : {
-            validator : Number.isInteger,
-            message   : '{VALUE} is not an integer value'
-        }
+        type     : Number
     },
     timestamp:{
         type:Date,
