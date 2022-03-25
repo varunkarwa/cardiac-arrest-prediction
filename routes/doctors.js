@@ -5,17 +5,11 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const config = require('config');
 const doc_auth = require('../middleware/doctor');
-const {check, validationResult } = require('express-validator/check');
-const tf = require('@tensorflow/tfjs');
-require('@tensorflow/tfjs-node');
+const {check, validationResult } = require('express-validator');
 
 const Doctor = require('../models/Doctors');
 const Patient = require('../models/Patients');
 const Prediction = require('../models/Prediction');
-
-const loadmodel = async() => {
-    return await tf.loadModel('file://model/model.json')
-}
 
 // @route   POST api/doctors
 // @desc    Resgister a doctor
@@ -68,12 +62,26 @@ async (req, res) => {
 });
 
 // @route   GET api/patients
-// @desc    Get all users patients
+// @desc    Get all patients
 // @access  Private
 router.get('/patients',doc_auth, async (req,res) => {
     try{
         const patients = await Patient.find().sort({name:1});
         res.json(patients);    
+    }
+    catch(err){
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   GET api/predictions
+// @desc    Get all predictions
+// @access  Private
+router.get('/predictions',doc_auth, async (req,res) => {
+    try{
+        const predictions = await Prediction.find({doctor:req.doctor.id}).sort({timestamp:-1});
+        res.json(predictions);    
     }
     catch(err){
         console.error(err.message);
@@ -91,39 +99,42 @@ router.post('/predict',[ doc_auth, [
     if(!errors.isEmpty()){
         return res.status(400).json({errors: errors.array()});
     }
-
+    
     const {patient,age,sex,cp,trestbps,chol,fbs,restecg,thalach,exang,oldpeak,slope,ca,thal}=req.body;
     try {
-        const model = loadmodel();
-        model.then( async function  (response) {
-            const input = tf.tensor([[age,sex,cp,trestbps,chol,fbs,restecg,thalach,exang,oldpeak,slope,ca,thal]],[1,13],'float32');
-            const target = response.predict(input).dataSync();
-            
-            const newPrediction = new Prediction({
-                patient,
-                age,
-                sex,
-                cp,
-                trestbps,
-                chol,
-                fbs,
-                restecg,
-                thalach,
-                exang,
-                oldpeak,
-                slope,
-                ca,
-                thal,
-                doctor: req.doctor.id,
-                target: target[0]
-            });
-            
-            const prediction = await newPrediction.save();
-            res.json(prediction);
-        },function(err){
-            console.log(err);
+        const features = {
+            features: [age,sex,cp,trestbps,chol,fbs,restecg,thalach,exang,oldpeak,slope,ca,thal]
+        }
+        const response = await fetch('https://stark-waters-26955.herokuapp.com/predict',{
+            method: 'POST',
+            body: JSON.stringify(features),
+            headers:{'Content-Type':'application/json'}
         })
-    } catch (error) {
+        const target = await response.json();
+
+        const newPrediction = new Prediction({
+            patient,
+            age,
+            sex,
+            cp,
+            trestbps,
+            chol,
+            fbs,
+            restecg,
+            thalach,
+            exang,
+            oldpeak,
+            slope,
+            ca,
+            thal,
+            doctor: req.doctor.id,
+            target: target.prediction
+        });
+            
+        const prediction = await newPrediction.save();
+        res.json(prediction);
+    }
+    catch (error) {
         console.error(error.message);
         res.status(500).send('Server Error');
     }
