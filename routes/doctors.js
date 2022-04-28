@@ -67,7 +67,8 @@ async (req, res) => {
 router.get('/patients',doc_auth, async (req,res) => {
     try{
         const patients = await Patient.find().sort({name:1});
-        res.json(patients);    
+        console.log(patients)
+        res.status(200).json(patients);    
     }
     catch(err){
         console.error(err.message);
@@ -96,6 +97,7 @@ router.post('/predict',[ doc_auth, [
     check('patient','Patient_Id is required').not().isEmpty()
 ]], async (req,res) => {
     const errors = validationResult(req);
+    console.log(errors);
     if(!errors.isEmpty()){
         return res.status(400).json({errors: errors.array()});
     }

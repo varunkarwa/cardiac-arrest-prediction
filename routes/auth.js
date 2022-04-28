@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const config = require('config');
 const doc_auth = require('../middleware/doctor');
 const patient_auth = require('../middleware/patient');
-const {check, validationResult } = require('express-validator/check');
+const {check, validationResult } = require('express-validator');
 
 const Doctor = require('../models/Doctors');
 const Patient = require('../models/Patients');

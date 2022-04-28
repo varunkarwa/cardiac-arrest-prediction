@@ -2,10 +2,13 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const auth = require('../middleware/patient');
 const config = require('config');
-const {check, validationResult } = require('express-validator/check');
+const {check, validationResult } = require('express-validator');
 
 const Patient = require('../models/Patients');
+const Doctor = require('../models/Doctors');
+const Prediction = require('../models/Prediction');
 
 // @route   POST api/patients
 // @desc    Resgister a patient
@@ -58,5 +61,44 @@ async (req, res) => {
         res.status(500).send('Server Error');
     }
 });
+
+
+//@route Get api/patients
+//@desc Get predicions
+//Private
+router.get('/predictions',auth,async (req,res) => {
+    try{
+        const predictions = await Prediction.find({patient:req.patient.id}).sort({timestamp:-1});
+        res.json(predictions);
+    }catch(err){
+        res.status(500).send(err.message);
+    }
+})
+
+// @route Get api/patients
+// @desc Get patient
+// Private 
+router.get('/',auth,async (req,res) =>{
+    try{
+        console.log(req.patient);
+        const patient = await Patient.findById({_id:req.patient.id});
+        res.json(patient);
+    }catch(err){
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+//@route Get api/doctor
+// @desc Get doctor
+// Private 
+router.get('/doctor',auth, async (req,res) => {
+    try{
+        const doctor = await Doctor.find().sort({name:-1});
+        res.json(doctor);
+    }catch(err){
+        res.status(500).send(err.message);
+    }
+})
 
 module.exports = router;
